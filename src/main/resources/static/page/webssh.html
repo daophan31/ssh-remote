@@ -1,0 +1,129 @@
+<!doctype html>
+<html>
+<head>
+    <title>WebSSH</title>
+    <link rel="stylesheet" href="../css/xterm.css"/>
+    <!-- CSS only -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg bg-light">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#"></a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <form class="row g-3">
+                <div class="col-auto">
+                    <label for="host" class="visually-hidden">Host</label>
+                    <input type="text" class="form-control" id="host" value="" placeholder="Host">
+                </div>
+                <div class="col-auto" style="width: 7em;">
+                    <label for="port" class="visually-hidden">Port</label>
+                    <input type="text" class="form-control" id="port" value="" placeholder="Port">
+                </div>
+                <div class="col-auto">
+                    <label for="username" class="visually-hidden">Username</label>
+                    <input type="text" class="form-control" id="username" value="" placeholder="Username">
+                </div>
+                <div class="col-auto">
+                    <label for="pass" class="visually-hidden">Password</label>
+                    <input type="password" class="form-control" id="pass" placeholder="Password">
+                </div>
+                <div class="col-auto">
+                    <button id="connect-btn" type="button" class="btn btn-primary mb-3">Connect</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</nav>
+<div id="terminal" style="width: 100%;height: 100%"></div>
+
+<!--<script src="../js/jquery-3.4.1.min.js"></script>-->
+<script src="../js/xterm.js" charset="utf-8"></script>
+<script src="../js/webssh.js" charset="utf-8"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"
+        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<script>
+    console.log("vao script")
+    $(document).ready(function () {
+        let term = null;
+        let client = null;
+        console.log("vao ready")
+        $("#connect-btn").click(function () {
+            if (term != null) {
+                term.write('exit');
+            }
+            if (client != null) {
+                client.closePrevConnect()
+            }
+            term = null;
+            client = null;
+            $("#terminal").empty()
+
+            console.log("click")
+            let host = $("#host").val()
+            let port = $("#port").val()
+            let username = $("#username").val()
+            let pass = $("#pass").val()
+
+            openTerminal({
+                operate: 'connect',
+                host: host,
+                port: port,
+                username: username,
+                password: pass
+            });
+
+            $("#host").val('')
+            $("#port").val('')
+            $("#username").val('')
+            $("#pass").val('')
+
+            function openTerminal(options) {
+                client = new WSSHClient();
+                term = new Terminal({
+                    cols: 97,
+                    rows: 37,
+                    cursorBlink: true, // cursor blinks
+                    cursorStyle: "block",  // cursor style null | 'block' | 'underline' | 'bar'
+                    scrollback: 800, // scroll back
+                    tabStopWidth: 8, //tab width
+                    screenKeys: true
+                });
+
+                term.on('data', function (data) {
+                    //callback function for keyboard input
+                    client.sendClientData(data);
+                });
+                term.open(document.getElementById('terminal'));
+                //Display the connection on the page...
+                term.write('Connecting...');
+                // perform the connection operation
+                client.connect({
+                    onError: function (error) {
+                        term.write('Error: ' + error + '\r\n');
+                    },
+                    onConnect: function () {
+                        client.sendInitData(options);
+                    },
+                    onClose: function () {
+                        term.write("\rconnection closed");
+                    },
+                    onData: function (data) {
+                        term.write(data);
+                    }
+                });
+            }
+        });
+    });
+</script>
+<!-- JavaScript Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
+        crossorigin="anonymous"></script>
+</body>
+</html>
